@@ -1,7 +1,14 @@
 import json
+from flask import current_app
+
 
 class TodosSQLite:
-    pass
+    def __init__(self):
+        try:
+            with open("todos.json", "r") as f:
+                self.todos = json.load(f)
+        except FileNotFoundError:
+            self.todos = []
     
 class Todos:
     def __init__(self):
