@@ -1,9 +1,0 @@
-[
-  {
-    "id": 1,
-    "title": "Zmieniony",
-    "description": "Czasowniki regularne",
-    "done": false
-  },
-  { "id": 2, "title": "Python", "description": "Dekoratory", "done": false }
-]
