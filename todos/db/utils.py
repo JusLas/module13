@@ -6,13 +6,19 @@ from flask import current_app, g
 from flask.cli import with_appcontext
 
 
+def dict_factory(cursor, row):
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
+
+
 def get_connection():
     conn = getattr(g, '_database', None)
 
-    print("current_app {}".format(current_app.config))
-
     if conn is None:
         conn = g._database = sqlite3.connect(current_app.config['DB_FILE'])
+        conn.row_factory = dict_factory
     return conn
 
 
@@ -131,42 +137,48 @@ def update(conn, table, id, **kwargs):
         cur = conn.cursor()
         cur.execute(sql, values)
         conn.commit()
-        print("OK")
+        return True
     except sqlite3.OperationalError as e:
         print(e)
 
+    return False
+
 
 def delete_where(conn, table, **kwargs):
-   """
-   Delete from table where attributes from
-   :param conn:  Connection to the SQLite database
-   :param table: table name
-   :param kwargs: dict of attributes and values
-   :return:
-   """
-   qs = []
-   values = tuple()
-   for k, v in kwargs.items():
-       qs.append(f"{k}=?")
-       values += (v,)
-   q = " AND ".join(qs)
+    """
+    Delete from table where attributes from
+    :param conn:  Connection to the SQLite database
+    :param table: table name
+    :param kwargs: dict of attributes and values
+    :return:
+    """
+    qs = []
+    values = tuple()
+    for k, v in kwargs.items():
+        qs.append(f"{k}=?")
+        values += (v,)
+    q = " AND ".join(qs)
 
-   sql = f'DELETE FROM {table} WHERE {q}'
-   cur = conn.cursor()
-   cur.execute(sql, values)
-   conn.commit()
-   print("Deleted")
+    sql = f'DELETE FROM {table} WHERE {q}'
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, values)
+        conn.commit()
+        return True
+    except sqlite3.OperationalError as e:
+        print(e)
 
+    return False
 
 def delete_all(conn, table):
-   """
-   Delete all rows from table
-   :param conn: Connection to the SQLite database
-   :param table: table name
-   :return:
-   """
-   sql = f'DELETE FROM {table}'
-   cur = conn.cursor()
-   cur.execute(sql)
-   conn.commit()
-   print("Deleted")
+    """
+    Delete all rows from table
+    :param conn: Connection to the SQLite database
+    :param table: table name
+    :return:
+    """
+    sql = f'DELETE FROM {table}'
+    cur = conn.cursor()
+    cur.execute(sql)
+    conn.commit()
+    print("Deleted")
