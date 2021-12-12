@@ -1,1 +1,34 @@
-[{"id": 1, "title": "Solaris", "author": "Stanis\u0142aw Lem", "publication_year": 1961, "read": true, "lent": false}, {"id": 2, "title": "Dzienniki gwiazdowe", "author": "Stanis\u0142aw Lem", "publication_year": 1957, "read": false, "lent": true}, {"id": 3, "title": "Jeszcze dzie\u0144 \u017cycia", "author": "Ryszard Kapu\u015bci\u0144ski", "publication_year": 1976, "read": false, "lent": false}, {"id": 4, "title": "Heban", "author": "Ryszard Kapu\u015bci\u0144ski", "publication_year": 1998, "read": true, "lent": false}]
+[
+  {
+    "id": 1,
+    "title": "Solaris",
+    "author": "Stanis\u0142aw Lem",
+    "publication_year": 1961,
+    "read": true,
+    "lent": false
+  },
+  {
+    "id": 2,
+    "title": "Dzienniki gwiazdowe",
+    "author": "Stanis\u0142aw Lem",
+    "publication_year": 1957,
+    "read": false,
+    "lent": true
+  },
+  {
+    "id": 3,
+    "title": "Jeszcze dzie\u0144 \u017cycia",
+    "author": "Ryszard Kapu\u015bci\u0144ski",
+    "publication_year": 1976,
+    "read": false,
+    "lent": false
+  },
+  {
+    "id": 4,
+    "title": "Heban",
+    "author": "Ryszard Kapu\u015bci\u0144ski",
+    "publication_year": 1998,
+    "read": true,
+    "lent": false
+  }
+]

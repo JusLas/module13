@@ -1,6 +1,6 @@
-# Rozdział 9
+# Rozdział 13
 
-## Zadanie 2: Domowa biblioteka
+## Zadanie 2: Domowa biblioteka 2.0
 
 Aplikacja domowej biblioteki książek pozwalająca na listowanie, dodawanie oraz modyfikacje 
 informacji o posiadanych książkach.
