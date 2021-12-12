@@ -1,7 +1,10 @@
-from flask import jsonify, abort, make_response, request
-from app.models import Book, Author, BookEvents, book_schema
-from app import app, db
+from datetime import datetime
+
+from flask import abort, jsonify, make_response, request
 from sqlalchemy import desc, exc
+
+from app import app, db
+from app.models import Author, Book, BookEvents, book_with_authors_schema
 
 
 @app.errorhandler(400)
@@ -34,7 +37,7 @@ def books_list_api_v1():
         except exc.CompileError:
             pass
 
-    return jsonify({'items': book_schema.dump(books, many=True)})
+    return jsonify({'items': book_with_authors_schema.dump(books, many=True)})
 
 
 @app.route('/api/v1/books/<int:book_id>', methods=['GET'])
@@ -43,29 +46,55 @@ def get_book(book_id):
     if not book:
         abort(404)
     
-    return jsonify({'book': book_schema.dump(book)})
+    return jsonify({'book': book_with_authors_schema.dump(book)})
 
 
 @app.route('/api/v1/books/', methods=['POST'])
 def create_book():
     data = request.json
 
+    authors = data.get('authors', [])
     if not data or \
         any([
             not data.get('title', ''),
-            not data.get('publication_year', 0)]):
+            not data.get('publication_year', 0),
+            not authors]):
         abort(400)
+    
+    for author in authors:
+        if not 'first_name' in author or \
+            not 'last_name' in author:
+            abort(400)
         
     book = Book(
         title= data['title'],
         publication_year = data['publication_year'],
         read = data.get('read', False)
     )
+
+    authors_temp = []
+
+    for author in authors:
+        existing = Author.query.filter_by(
+            first_name=author['first_name'], last_name=author['last_name']
+            ).first()
+        if existing:
+            authors_temp.append(existing)
+        else:
+            created = Author(
+                first_name = author['first_name'],
+                last_name = author['last_name']
+            )
+            db.session.add(created)
+            db.session.commit()
+            authors_temp.append(created)
+    
+    book.authors = authors_temp
         
     db.session.add(book)
     db.session.commit()
     
-    return jsonify({'book': book_schema.dump(book)}), 201
+    return jsonify({'book': book_with_authors_schema.dump(book)}), 201
 
 
 @app.route('/api/v1/books/<int:book_id>', methods=['PUT'])
@@ -93,7 +122,7 @@ def update_book(book_id):
     db.session.add(book)
     db.session.commit()
     
-    return jsonify({'book': book_schema.dump(book)})
+    return jsonify({'book': book_with_authors_schema.dump(book)})
 
 
 @app.route('/api/v1/books/<int:book_id>', methods=['DELETE'])
@@ -108,5 +137,45 @@ def delete_book(book_id):
     return jsonify({'result': True})
 
 
-if __name__ == '__main__':
-    app.run(debug=True)
+@app.route('/api/v1/books/lent', methods=['POST'])
+def lent_book():
+    data = request.json
+    if not data or not data.get('book_id', ''):
+        abort(400)
+
+    book = Book.query.get(data['book_id'])
+
+    if not book:
+        abort(404)
+
+    for e in book.events:
+        if e.lent and not e.returned:
+            return jsonify({'result': False})
+    
+    event = BookEvents(lent=datetime.utcnow(), book=book)
+    db.session.add(event)
+    db.session.commit()
+    
+    return jsonify({'result': True})
+
+
+@app.route('/api/v1/books/return', methods=['POST'])
+def return_book():
+    data = request.json
+    if not data or not data.get('book_id', ''):
+        abort(400)
+
+    book = Book.query.get(data['book_id'])
+
+    if not book:
+        abort(404)
+
+    for e in book.events:
+        if e.lent and not e.returned:
+            e.returned = datetime.utcnow()
+            db.session.add(e)
+            db.session.commit()
+            return jsonify({'result': True})
+    
+    
+    return jsonify({'result': False})

@@ -27,6 +27,16 @@ class BookSchema(Schema):
     title = fields.Str()
     publication_year = fields.Int()
     read = fields.Bool()
+    events = fields.Nested(lambda: BookEventsSchema, many=True)
+
+
+class BookWithAuthorsSchema(Schema):
+    id = fields.Int(dump_only=True)
+    title = fields.Str()
+    publication_year = fields.Int()
+    read = fields.Bool()
+    authors = fields.Nested(lambda: AuthorSchema, many=True)
+    events = fields.Nested(lambda: BookEventsSchema, many=True)
 
 
 class Author(db.Model):
@@ -37,6 +47,19 @@ class Author(db.Model):
     def __str__(self):
         return f"<Author {self.first_name} {self.last_name}>"
 
+
+class AuthorSchema(Schema):
+    id = fields.Int(dump_only=True)
+    first_name = fields.Str()
+    last_name = fields.Str()
+
+class AuthorWithBooksSchema(Schema):
+    id = fields.Int(dump_only=True)
+    first_name = fields.Str()
+    last_name = fields.Str()
+    books = fields.Nested(lambda: BookSchema, many=True)
+
+
 class BookEvents(db.Model):
    id = db.Column(db.Integer, primary_key=True)
    lent = db.Column(db.DateTime, index=True)
@@ -46,5 +69,13 @@ class BookEvents(db.Model):
    def __str__(self):
         return f"<Book event {self.id}>"
 
+class BookEventsSchema(Schema):
+    id = fields.Int(dump_only=True)
+    lent = fields.DateTime()
+    returned = fields.DateTime()
+
 
 book_schema = BookSchema()
+book_with_authors_schema = BookWithAuthorsSchema()
+author_schema = AuthorSchema()
+author_with_books_schema = AuthorWithBooksSchema()
