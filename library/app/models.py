@@ -1,4 +1,5 @@
 from app import db
+from marshmallow import Schema, fields
 
 books_authors = db.Table('books_authors',
     db.Column(
@@ -12,12 +13,21 @@ class Book(db.Model):
     title = db.Column(db.Text)
     publication_year = db.Column(db.Integer, index=True)
     read = db.Column(db.Boolean, default=False)
-    authors = db.relationship('Tag', secondary=books_authors, lazy='subquery',
+    authors = db.relationship(
+        'Author', secondary=books_authors, lazy='subquery',
         backref=db.backref('books', lazy=True))
     events = db.relationship("BookEvents", backref="book", lazy="dynamic")
     
     def __str__(self):
         return f"<Book {self.title}>"
+
+
+class BookSchema(Schema):
+    id = fields.Int(dump_only=True)
+    title = fields.Str()
+    publication_year = fields.Int()
+    read = fields.Bool()
+
 
 class Author(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -35,3 +45,6 @@ class BookEvents(db.Model):
 
    def __str__(self):
         return f"<Book event {self.id}>"
+
+
+book_schema = BookSchema()

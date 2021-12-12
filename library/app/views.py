@@ -1,6 +1,7 @@
 from flask import jsonify, abort, make_response, request
-from app.models import Book, Author, BookEvents
-from app import app
+from app.models import Book, Author, BookEvents, book_schema
+from app import app, db
+from sqlalchemy import desc, exc
 
 
 @app.errorhandler(400)
@@ -15,87 +16,96 @@ def not_found(error):
         jsonify({'error': 'Not found', 'status_code': 404}), 404)
 
 
-# @app.route('/api/v1/books/', methods=['GET'])
-# def books_list_api_v1():
-#     order_by = request.args.get('order_by', 'id')
+@app.route('/api/v1/books/', methods=['GET'])
+def books_list_api_v1():
+    books = Book.query.all()
 
-#     return jsonify(books.all(order_by))
+    order_by = request.args.get('order_by', 'id')
+    if order_by and isinstance(order_by, str):
+        revese = False
+        if order_by[0] == '-':
+            revese = True
+            order_by = order_by[1:]
+        try:
+            if revese:
+                books = Book.query.order_by(desc(order_by)).all()
+            else:
+                books = Book.query.order_by(order_by).all()
+        except exc.CompileError:
+            pass
+
+    return jsonify({'items': book_schema.dump(books, many=True)})
 
 
-# @app.route('/api/v1/books/<int:book_id>', methods=['GET'])
-# def get_book(book_id):
-#     book = books.get(book_id)
-#     if not book:
-#         abort(404)
+@app.route('/api/v1/books/<int:book_id>', methods=['GET'])
+def get_book(book_id):
+    book = Book.query.get(book_id)
+    if not book:
+        abort(404)
     
-#     return jsonify({'book': book})
+    return jsonify({'book': book_schema.dump(book)})
 
 
-# @app.route('/api/v1/books/', methods=['POST'])
-# def create_book():
-#     data = request.json
+@app.route('/api/v1/books/', methods=['POST'])
+def create_book():
+    data = request.json
 
-#     if not data or \
-#         any([
-#             not data.get('title', ''),
-#             not data.get('author', ''),
-#             not data.get('publication_year', 0)]):
-#         abort(400)
+    if not data or \
+        any([
+            not data.get('title', ''),
+            not data.get('publication_year', 0)]):
+        abort(400)
         
-#     book = {
-#         'id': books.all()[-1]['id'] + 1,
-#         'title': data['title'],
-#         'author': data['author'],
-#         'publication_year': data['publication_year'],
-#         'read': data.get('read', False),
-#         'lent': data.get('lent', False)
-#         }
+    book = Book(
+        title= data['title'],
+        publication_year = data['publication_year'],
+        read = data.get('read', False)
+    )
         
-#     books.create(book)
+    db.session.add(book)
+    db.session.commit()
     
-#     return jsonify({'book': book}), 201
+    return jsonify({'book': book_schema.dump(book)}), 201
 
 
-# @app.route('/api/v1/books/<int:book_id>', methods=['PUT'])
-# def update_book(book_id):
-#     book = books.get(book_id)
-#     if not book:
-#         abort(404)
+@app.route('/api/v1/books/<int:book_id>', methods=['PUT'])
+def update_book(book_id):
+    book = Book.query.get(book_id)
+    if not book:
+        abort(404)
     
-#     if not request.json:
-#         abort(400)
+    if not request.json:
+        abort(400)
     
-#     data = request.json
-#     if any([
-#         'title' in data and not isinstance(data.get('title'), str),
-#         'author' in data and not isinstance(data.get('author'), str),
-#         'publication_year' in data and not isinstance(
-#             data.get('publication_year'), int),
-#         'read' in data and not isinstance(data.get('read'), bool),
-#         'lent' in data and not isinstance(data.get('lent'), bool) ]):
-#         abort(400)
+    data = request.json
+    if any([
+        'title' in data and not isinstance(data.get('title'), str),
+        'publication_year' in data and not isinstance(
+            data.get('publication_year'), int),
+        'read' in data and not isinstance(data.get('read'), bool)]):
+        abort(400)
     
-#     todo = {
-#         'id': book_id,
-#         'title': data.get('title', book['title']),
-#         'author': data.get('author', book['author']),
-#         'publication_year': data.get(
-#             'publication_year', book['publication_year']),
-#         'read': data['read'] if 'read' in data else book['read'],
-#         'lent': data['lent'] if 'lent' in data else book['lent']
-#         }
-#     books.update(book_id, todo)
+    book.title = data.get('title', book.title)
+    book.publication_year = data.get(
+            'publication_year', book.publication_year)
+    book.read = data['read'] if 'read' in data else book.read
+
+    db.session.add(book)
+    db.session.commit()
     
-#     return jsonify({'book': book})
+    return jsonify({'book': book_schema.dump(book)})
 
 
-# @app.route('/api/v1/books/<int:book_id>', methods=['DELETE'])
-# def delete_book(book_id):
-#     result = books.delete(book_id)
-#     if not result:
-#         abort(404)
+@app.route('/api/v1/books/<int:book_id>', methods=['DELETE'])
+def delete_book(book_id):
+    book = Book.query.get(book_id)
+    if not book:
+        abort(404)
     
-#     return jsonify({'result': result})
+    db.session.delete(book)
+    db.session.commit()
+    
+    return jsonify({'result': True})
 
 
 if __name__ == '__main__':

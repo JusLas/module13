@@ -18,6 +18,14 @@ informacji o posiadanych książkach.
 
     `pip install -r requirements.txt`
 
+4. Inicjalizacja bazy danych
+
+    `flask db init`
+
+4. Wykonanie migracji
+
+    `flask db upgrade`
+
 4. Uruchomienie serwera lokalnego
 
     `flask run`
